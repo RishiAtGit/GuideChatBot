@@ -1,0 +1,17 @@
+fastapi
+fastapi-cli
+uvicorn
+sentence-transformers
+faiss-cpu
+numpy
+transformers
+langchain
+langchain-community
+langchain-core
+pinecone
+google-generativeai 
+pinecone
+torch
+pandas
+fastapi-limiter 
+slowapi
