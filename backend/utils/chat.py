@@ -51,7 +51,7 @@ def read_json_file(file_path):
 
 def get_gemini_response(prompt):
     try:
-        model = genai.GenerativeModel('gemini-1.5-flash')
+        model = genai.GenerativeModel('gemini-2.0-flash')
         
         safety_settings = [
             {
@@ -179,31 +179,46 @@ def format_fort_info(forts):
 def generate_response(session_id, human_prompt):
     context, examples = read_json_file(file_path)
     
+    # 1. Fetch RAG Context first
+    if is_fort_related(human_prompt):
+        relevant_forts = get_relevant_forts(human_prompt)
+        forts_context = "Context Information from Database:\n" + format_fort_info(relevant_forts)
+    else:
+        forts_context = ""
+
+    # 2. Update the Example Prompt
     example_prompt = PromptTemplate(
         input_variables=["input", "output"],
         template="Human: {input}\nAssistant: {output}"
     )
 
+    # 3. Create the Suffix (Context + History + Input)
+    # We inject the forts_context BEFORE the "Human:" input so the AI knows facts before answering.
+    suffix_template = (
+        f"{context}\n\n"
+        f"{forts_context}\n\n"  # <--- FIXED: Context goes here
+        f"Current conversation:\n{{history}}\n"
+        f"Human: {{input}}\n"
+        f"Assistant:"
+    )
+
     few_shot_template = FewShotPromptTemplate(
         examples=examples,
         example_prompt=example_prompt,
-        suffix=f"{context}\nCurrent conversation:\n{{history}}\nHuman: {{input}}\nAssistant:",
+        suffix=suffix_template,
         input_variables=["input", "history"]
     )
 
     history = get_conversation_history(session_id)
     
-    if is_fort_related(human_prompt):
-        relevant_forts = get_relevant_forts(human_prompt)
-        forts_context = "Relevant forts:\n" + format_fort_info(relevant_forts)
-    else:
-        forts_context = ""
+    # 4. Generate the final prompt string
+    prompt = few_shot_template.format(input=human_prompt, history=history)
     
-    prompt = few_shot_template.format(input=human_prompt, history=history) + "\n" + forts_context
-    
+    # 5. Call Gemini
     response = get_gemini_response(prompt)
     response = clean_response(response)
     formatted_response = format_response(response)
+    
     update_conversation_history(session_id, "Human", human_prompt)
     update_conversation_history(session_id, "Assistant", response)
     

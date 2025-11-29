@@ -152,7 +152,7 @@ function addMessage(message, isUser = false, isHTML = false) {
         avatar.textContent = 'U';
     } else {
         const img = document.createElement('img');
-        img.src = 'C:/Users/HP/OneDrive/Desktop/ChatBot/frontend/assets/ai-icon.png';
+        img.src = '/static/assets/ai-icon.png';
         img.width = 50;
         img.height = 50;
         avatar.appendChild(img);
